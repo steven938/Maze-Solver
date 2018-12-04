@@ -8,15 +8,18 @@ import java.util.Vector;
  */
 public class Graph {
     private Vector<GraphNode> nodeList;
-    private Vector<Vector<GraphEdge>> matrix;
-
+    private GraphEdge[][] matrix;
     /**
      * Creates a graph with n nodes and no edges. This is the constructor for the class.
      * The names of the nodes are 0, 1, . . . , n−1.
      * @param n
      */
     Graph(int n){
-
+        matrix = new GraphEdge[n][n];
+        nodeList = new Vector<>();
+        for(int i=0;i<n;i++){
+            nodeList.add(new GraphNode(i));
+        }
     }
 
     /**
@@ -28,7 +31,15 @@ public class Graph {
      * @param busLine
      */
     void insertEdge(GraphNode u, GraphNode v, char busLine) throws GraphException{
-
+        if(u.getName()==v.getName())
+            throw new GraphException("Error inserting edge");
+        if(u.getName()>=matrix.length||u.getName()<0||v.getName()>=matrix.length||u.getName()<0)
+            throw new GraphException("Error inserting edge");
+        GraphEdge edge = matrix[u.getName()][v.getName()];
+        if(edge!=null)
+            throw new GraphException("Error inserting edge");
+        matrix[u.getName()][v.getName()] = new GraphEdge(u, v, busLine);
+        matrix[v.getName()][u.getName()] = new GraphEdge(u, v, busLine);
     }
 
     /**
@@ -39,7 +50,9 @@ public class Graph {
      * @throws GraphException if name does not exist
      */
     GraphNode getNode(int name) throws GraphException{
-
+        if(name>=matrix.length||name<0)
+            throw new GraphException("Error getting node");
+        return nodeList.get(name);
     }
 
     /**
@@ -50,7 +63,7 @@ public class Graph {
      * @throws GraphException if u or v are not nodes of graph
      */
     Iterator<GraphEdge> incidentEdges(GraphNode u){
-
+        
     }
 
     /**
