@@ -16,7 +16,7 @@ public class Graph {
      */
     Graph(int n){
         matrix = new GraphEdge[n][n];
-        nodeList = new Vector<>();
+        nodeList = new Vector<>(n);
         for(int i=0;i<n;i++){
             nodeList.add(new GraphNode(i));
         }
@@ -62,8 +62,15 @@ public class Graph {
      * @return
      * @throws GraphException if u or v are not nodes of graph
      */
-    Iterator<GraphEdge> incidentEdges(GraphNode u){
-        
+    Iterator<GraphEdge> incidentEdges(GraphNode u) throws GraphException{
+        if(u.getName()>=matrix.length||u.getName()<0)
+            throw new GraphException(" ");
+        Vector edgeList = new Vector(matrix.length);
+        for(GraphEdge edge: matrix[u.getName()]){
+            if(edge!=null)
+                edgeList.add(edge);
+        }
+        return edgeList.iterator();
     }
 
     /**
@@ -75,8 +82,16 @@ public class Graph {
      * @throws GraphException if u or v are not nodes of graph
      */
     GraphEdge getEdge(GraphNode u, GraphNode v) throws GraphException{
-
+        if(u.getName()==v.getName())
+            throw new GraphException("Error getting edge");
+        if(u.getName()>=matrix.length||u.getName()<0||v.getName()>=matrix.length||u.getName()<0)
+            throw new GraphException("Error getting edge");
+        GraphEdge edge = matrix[u.getName()][v.getName()];
+        if(edge==null)
+            throw new GraphException("Error getting edge");
+        return edge;
     }
+
 
     /**
      * Returns true if nodes u and v are
@@ -87,7 +102,11 @@ public class Graph {
      * @return
      */
     boolean areAdjacent(GraphNode u, GraphNode v) throws GraphException{
-
+        if(u.getName()==v.getName())
+            throw new GraphException("Error checking adjacency");
+        if(u.getName()>=matrix.length||u.getName()<0||v.getName()>=matrix.length||u.getName()<0)
+            throw new GraphException("Error checking adjacency");
+        return matrix[u.getName()][v.getName()]!=null;
     }
 
 }
