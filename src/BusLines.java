@@ -15,45 +15,46 @@ public class BusLines {
      * Constructor for building a city map with its bus lines from
      * the input file. If the input file does not exist, this method should throw a MapException.
      * Read below to learn about the format of the input file.
+     *
      * @param inputFile
      * @throws MapException
      */
     public BusLines(String inputFile) throws MapException {
-        try(BufferedReader in = new BufferedReader(new FileReader(inputFile))) {
+        try (BufferedReader in = new BufferedReader(new FileReader(inputFile))) {
             String line1 = in.readLine();
             String[] props = line1.split(" ");
-            if(props.length < 4) {
+            if (props.length < 4) {
                 throw new MapException("Error reading first line of input file");
             }
-
+            // below parses information from the first line
             width = Integer.parseInt(props[1]);
             length = Integer.parseInt(props[2]);
             maxChanges = Integer.parseInt(props[3]);
             int counter = 0;
-            int numline = 0;
+            int numline = 0; // this counter is used to keep track of the line to help my method find the start and end
             graph = new Graph(width * length);
 
-            while((line1 = in.readLine()) != null) {
+            while ((line1 = in.readLine()) != null) {
                 String line2 = in.readLine();
-                if(line2 != null && line1.length() != line2.length()) {
+                if (line2 != null && line1.length() != line2.length()) {
                     throw new MapException("Error due to lines having inconsistent length");
                 }
 
-                for(int i = 0; i < line1.length(); i++) {
-                    if(i % 2 == 0) {
-                        if(line2 != null) {
+                for (int i = 0; i < line1.length(); i++) {
+                    if (i % 2 == 0) {
+                        if (line2 != null) {
                             char c = line2.charAt(i);
-                            if(c != ' ') {
+                            if (c != ' ') {
                                 graph.insertEdge(new GraphNode(counter), new GraphNode(counter + width), c);
                             }
                         }
-                        if(line1.charAt(i) == 'S')
-                            start = numline * width + i/2;
-                        else if(line1.charAt(i) == 'D')
-                            end = numline * width + i/2;
+                        if (line1.charAt(i) == 'S')
+                            start = numline * width + i / 2;
+                        else if (line1.charAt(i) == 'D')
+                            end = numline * width + i / 2;
                     } else {
                         char c = line1.charAt(i);
-                        if(c != ' ') {
+                        if (c != ' ') {
                             graph.insertEdge(new GraphNode(counter), new GraphNode(counter + 1), c);
                         }
                         counter++;
@@ -61,7 +62,7 @@ public class BusLines {
                 }
                 counter++;
                 numline++;
-                if(line2 == null) {
+                if (line2 == null) {
                     break;
                 }
             }
@@ -73,6 +74,7 @@ public class BusLines {
     /**
      * Returns the graph representing the map. This method throws a MapException
      * if the graph could not be created.
+     *
      * @return
      * @throws MapException
      */
@@ -85,69 +87,79 @@ public class BusLines {
      * from the starting point to the destination, if such a path exists. If the path does not exist,
      * this method returns the value null. For example for the map and path described above the
      * Iterator returned by this method should contain the nodes 0, 1, 5, 6, and 10.
+     *
      * @return
      */
     public Iterator<GraphNode> trip() {
         Stack<GraphNode> path = new Stack<>();
         int numChanges = 0;
         findPath(start, path);
-        if(path.isEmpty())
+        if (path.isEmpty())
             return null;
         return path.iterator();
     }
 
-    private void findPath(int name, Stack<GraphNode> path){
-        try{
-            if(!path.isEmpty() && path.peek().getName() == end)
-                return;
+    /**
+     * This helper method recursively finds the path using DFS and backtracks when it has exhausted all possible solutions
+     *
+     * @param name
+     * @param path
+     */
+    private void findPath(int name, Stack<GraphNode> path) {
+        try {
             GraphNode current = graph.getNode(name);
             current.setMark(true);
             path.push(current);
-            if(current.getName()==end)
+            if (name == end)
                 return;
             Iterator<GraphEdge> adjNodes = graph.incidentEdges(current);
-            while(adjNodes.hasNext()){
+            while (adjNodes.hasNext()) {
+                if (!path.isEmpty() && path.peek().getName() == end)
+                    return;
                 GraphEdge edge = adjNodes.next();
-                if(changeBus(edge.getBusLine(), path)){
-                    if(numChanges+1 > maxChanges)
+                if (changeBus(edge.getBusLine(), path)) {
+                    if (numChanges + 1 > maxChanges)
                         continue;
+                    else
+                        numChanges++;
                 }
-                GraphNode nextNode = (edge.firstEndpoint().getName()!=name) ? edge.firstEndpoint(): edge.secondEndpoint();
-                if(graph.getNode(nextNode.getName()).getMark())
+                GraphNode nextNode = (edge.firstEndpoint().getName() != name) ? edge.firstEndpoint() : edge.secondEndpoint();
+                if (graph.getNode(nextNode.getName()).getMark())
                     continue;
                 findPath(nextNode.getName(), path);
             }
+            // the code below unmarks the current node, pops it from the path, and decrements numChanges if necessary
+            if (!path.isEmpty() && path.peek().getName() == end)
+                return;
             graph.getNode(name).setMark(false);
             path.pop();
-            if(!path.isEmpty()){ // FIX
-                GraphEdge DeletedEdge = graph.getEdge(new GraphNode(name), path.peek()); // FIX
-                if(changeBus(DeletedEdge.getBusLine(), path)) // FIX
+            if (!path.isEmpty()) { // FIX
+                GraphEdge DeletedEdge = graph.getEdge(current, path.peek()); // FIX
+                if (changeBus(DeletedEdge.getBusLine(), path)) // FIX
                     numChanges--; // FIX
             }
-        }catch (GraphException e){
+        } catch (GraphException e) {
             ;
         }
     }
 
     /**
-     * Returns True if the current bus is a different from the previous bus line
-     * Returns False if the current bus line is the same as the previous bus line
-     * @param currentBusLine
-     * @param path
+     * This helper method is used to check if the current busLine
+     *
+     * @param currentBusLine if the current bus is a different from the previous bus line
+     * @param path           if the current bus line is the same as the previous bus line
      * @return
      */
     private boolean changeBus(char currentBusLine, Stack<GraphNode> path) throws GraphException {
-        if(path.empty())
+        if (path.empty())
             return false;
         GraphNode prev = path.pop();
-        if(path.isEmpty()){
+        if (path.isEmpty()) {
             path.push(prev);
             return false;
         }
         GraphEdge edge = graph.getEdge(prev, path.peek());
         path.push(prev);
-        return(edge.getBusLine() != currentBusLine);
+        return (edge.getBusLine() != currentBusLine);
     }
-
 }
-
